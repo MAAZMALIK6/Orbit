@@ -1,0 +1,16 @@
+{
+  "name": "orbit-browser-agent",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "A model-agnostic Chrome browser agent",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check.mjs",
+    "package": "node scripts/package.mjs",
+    "demo": "node scripts/demo-server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,36 @@
+# Implementation contract
+
+No build step. Chrome MV3 extension, plain ES modules under `extension/`. Node built-in test runner under `tests/`. Brand: Orbit.
+
+## Shared model messages
+
+`{role: 'user'|'assistant'|'tool', content: string, images?: [{data: base64, mimeType: string}], toolCalls?: [{id, name, args}], toolCallId?: string, name?: string}`.
+
+## Provider module (extension/core/providers.js)
+
+Export `complete({settings, system, messages, tools, signal}) -> {text, toolCalls: [{id,name,args}], usage?}`. Export `testConnection(settings, signal)`, `normalizeUsage(usage) -> {inputTokens,outputTokens}|null`, `outputError(message)`, and optionally `PROVIDER_PRESETS`. Errors caused by an unusable model reply (malformed or unknown tool calls, bad JSON, empty or truncated output) carry `code: 'model_output'` so the agent can ask the model to correct itself. JSON mode accepts the protocol object embedded in prose, alternative key names (tool_calls, arguments, parameters), and a bare `{name,args}` call; native mode recovers tool calls printed as text when every name is a known tool. `<think>` blocks are stripped.
+
+Tools are `{name,description,parameters}` JSON schemas. Settings: `{compact:boolean,contextTokens:number,autoObserve:boolean,provider:'openai'|'anthropic'|'gemini'|'compatible',baseUrl,model,apiKey,toolMode:'native'|'json',vision:boolean,permissionMode:'ask'|'auto',maxTurns:40,maxTokens:4096}`. baseUrl is API root, e.g. https://api.openai.com/v1 or https://api.anthropic.com/v1 or https://generativelanguage.googleapis.com/v1beta or http://localhost:11434/v1. Model IDs user supplied. JSON tool mode handles text-only models. Images only when vision true.
+
+## Browser driver (extension/browser/driver.js)
+
+Export `executeTool(name,args,{siteGuard?})`, `actionHost(name,args) -> hostname|''`, `detachAll()`. With `siteGuard`, the action is refused unless `actionHost` still equals it at dispatch time. Uses chrome.debugger and tabs. Tools: `list_tabs {}`, `open_tab {url}`, `switch_tab {tabId}`, `close_tab {tabId}`, `navigate {tabId?,url}`, `go_back {tabId?}`, `read_page {tabId?}`, `screenshot {tabId?}`, `click {tabId?,elementId?,x?,y?,button?}`, `type_text {tabId?,elementId?,text,clear?}`, `press_key {tabId?,key}`, `scroll {tabId?,direction:'up'|'down'|'left'|'right',amount?}`, `select_option {tabId?,elementId,value}`, `wait {milliseconds}`, `get_page_text {tabId?,offset?}` (whole document in 25k-char chunks, returns `nextOffset` while more remains), `find {tabId?,query,limit?}` (whole-document search for interactive elements, returns fresh IDs and `inViewport`), `handle_dialog {tabId?,accept,promptText?}`, `hover {tabId?,elementId?,x?,y?}`, `drag {tabId?,fromX,fromY,toX,toY}`. `read_page` returns visible text and element IDs mapping to elements with labels/roles. Screenshot returns `{image:{data,mimeType},...metadata}`. Reject non-http(s) URLs. Frame/shadow handling best effort. No arbitrary model JS execution. IDs can become stale; report errors. Explicit tab IDs should be used after initial observation. Read redacts password input values. JavaScript dialogs are tracked from CDP events: an input command that opens one settles immediately and the result carries `dialog {type,message}`; other actions on that tab fail until `handle_dialog`.
+
+## Agent engine (extension/core/agent.js)
+
+Export `Agent`. Constructor `{onChange}` callback receives state. Public async `init()`, `start(task,settings)`, `resume(settings)`, `pause()`, `stop()`, `approve(boolean, {site?:boolean})`, `reply(text)`, `reset()`; expose `.state`. Start/resume initiate loop and return quickly. State `{id,status,task,events,plan,notes,pendingApproval,question,answer,turn,maxTurns,allowedSites,usage:{inputTokens,outputTokens}}`. Status idle/running/paused/approval/waiting/completed/error/stopped. Events `{id,kind,text,details?,at}` kinds user/assistant/tool/error/system. Plan `[{step,status:'pending'|'in_progress'|'done'}]`. pendingApproval `{id,name,args,reason,host?}`. `approve(true,{site:true})` adds `host` to `allowedSites`; later ask-mode actions whose `actionHost` is allowed dispatch with `siteGuard` instead of pausing. Actions with no resolvable host always pause. `toolsFor({compact,vision})` chooses the tools offered to the model. Tool internal: update_plan {steps:[{step,status}]}, remember {note}, ask_user {question}, finish {answer}. Agent owns persistence and RPC; UI calls above methods. Pausing/closing panel never automatically replays pending mutations; recovery marks interrupted runs paused. `pendingCalls` is a copy of the assistant's `toolCalls`; every call always receives exactly one tool result (skipped calls get `{skipped:true}`). Tool results are formatted by `core/observe.js` as compact text; older observations are replaced by summaries (newest two kept) and history is trimmed to `contextTokens`. After a page-changing action with `autoObserve`, the agent re-reads the page and appends it to the result, and skips the rest of that turn's queued calls except update_plan/remember. Arguments pass through `coerceArgs` before strict validation. `finish` is refused once while `needsCheck` (an unobserved change) is set. A text-only reply is nudged once; a second one completes only when nothing is unchecked, otherwise it becomes a question. Help stops: 3 unusable replies, 3 failed steps, or the same step 3 times with an unchanged result set status `waiting` with `questionCall {id:null,name:'help'}`; `reply(text, settings?)` then adds a plain user message.
+
+## Settings (extension/core/storage.js)
+
+Export `DEFAULT_SETTINGS`, `loadSettings()`, `saveSettings(settings)`, `loadSession()`, `saveSession(state)`, `clearSession()`, `MAX_SHORTCUTS`, `validateShortcuts(list)`, `loadShortcuts()`, `saveShortcuts(list)`. Shortcuts are `[{id,title,prompt,createdAt}]` in chrome.storage.local. `saveSettings` supports `rememberKey:boolean`: false uses chrome.storage.session; true local. UI must explain local keys are unencrypted. Persistent session has history incl page text; provide reset. No content scripts.
+
+## UI (extension/panel/)
+
+panel.html, panel.css, panel.js. Import Agent/storage/providers. Connection configuration/presets, editable model and base URL, native/JSON tools, vision toggle, test connection, permission ask/auto, max steps, remember key. Main task conversation + plan + action history, approval UI (allow once / allow on site for this task / deny), reply UI, pause/resume/stop, new task, export sanitized run log, token usage in run meta, saved shortcuts on the home screen. No inline JS. Visual style: warm off-white, charcoal, terracotta accent, crisp typography. Use safe textContent for untrusted text. Browser in-flight model requests run in panel to avoid SW fetch timeout; close panel pauses work; Chrome worker only executes browser actions. Runtime keeps one panel runner lock; engine handles it. Worker RPC types: `lease`, `currentTab`, `actionHost`, `browser`. Command `open-panel` (Alt+Shift+O) opens the side panel.
+
+## Ownership
+
+Root: manifest, background, agent, tools, storage, docs, integration tests.
+Provider agent: providers.js + provider tests.
+Browser agent: driver.js and browser-related helpers/tests.
+UI agent: panel files.

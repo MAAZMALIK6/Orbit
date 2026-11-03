@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Orbit — your browser, in motion</title>
+  <link rel="stylesheet" href="panel.css">
+  <script type="module" src="panel.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="#" aria-label="Orbit home"><span class="orbit-mark" aria-hidden="true"><span></span></span>orbit<span class="brand-period">.</span></a>
+      <div class="header-actions">
+        <span class="status-pill" id="status-pill" role="status"><span class="status-dot" aria-hidden="true"></span><span id="status-label">Starting</span></span>
+        <button type="button" class="icon-button" id="settings-button" aria-label="Open settings" title="Settings">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" class="icon-fill"/><circle cx="15" cy="17" r="3" class="icon-fill"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="notification" class="notification" role="status" hidden><span id="notification-text"></span><button type="button" id="dismiss-notification" aria-label="Dismiss notification">×</button></div>
+
+    <main class="workspace" id="workspace">
+      <section class="welcome" id="welcome" aria-labelledby="welcome-title">
+        <div class="welcome-eyebrow"><span class="little-star" aria-hidden="true">✳</span> A LITTLE HELP. A LOT POSSIBLE.</div>
+        <h1 id="welcome-title">Your browser,<br>working with you.</h1>
+        <p class="welcome-copy">Give Orbit a task. It can read, click, type, and move across tabs—with the model you choose.</p>
+        <div class="getting-started" id="getting-started"><span class="step-number">1</span><div><strong>Bring your favorite model</strong><p>Connect an API or a local model to get started.</p></div><button type="button" class="text-button" id="connect-button">Connect <span aria-hidden="true">↗</span></button></div>
+        <section class="suggestions shortcuts" id="shortcuts" aria-labelledby="shortcuts-title" hidden>
+          <p class="section-eyebrow" id="shortcuts-title">YOUR SHORTCUTS</p>
+          <ul class="shortcut-list" id="shortcut-list"></ul>
+        </section>
+        <div class="suggestions" aria-label="Example tasks">
+          <p class="section-eyebrow">A FEW PLACES TO START</p>
+          <button type="button" class="suggestion" data-prompt="Read this page, summarize the key points, and list anything I should follow up on."><span class="suggestion-icon" aria-hidden="true">↗</span><span><strong>Get the bigger picture</strong><small>Read this page and find what matters</small></span><span class="suggestion-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="suggestion" data-prompt="Compare the pages in my open tabs. Make a clear comparison of the main differences, with links to each source."><span class="suggestion-icon" aria-hidden="true">⇄</span><span><strong>Connect the dots</strong><small>Compare information across open tabs</small></span><span class="suggestion-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="suggestion" data-prompt="Help me work through the task on this page. First inspect it and make a plan, then ask me for any missing information before taking action."><span class="suggestion-icon" aria-hidden="true">✓</span><span><strong>Move a task forward</strong><small>Plan a workflow and work through it</small></span><span class="suggestion-arrow" aria-hidden="true">↗</span></button>
+        </div>
+        <p class="capability-note">Complex tasks work best with models that reason well and use tools reliably.</p>
+      </section>
+
+      <section class="run" id="run" aria-label="Current task" hidden>
+        <div class="run-heading"><span class="section-eyebrow">YOUR TASK</span><button type="button" class="text-button" id="new-task-button">New task <span aria-hidden="true">＋</span></button></div>
+        <h1 class="task-heading" id="task-heading"></h1>
+        <div class="run-meta"><span id="run-model"></span><span class="meta-separator">·</span><span id="turn-count"></span><span class="meta-separator" id="token-separator" hidden>·</span><span id="token-count" hidden></span></div>
+
+        <section class="plan-card" id="plan-card" aria-label="Task plan" hidden><div class="card-heading"><span>THE PLAN</span><span id="plan-progress"></span></div><ol id="plan-list" class="plan-list"></ol></section>
+
+        <div class="activity-heading"><h2>Activity</h2><div class="run-controls"><button type="button" class="text-button" id="pause-button" hidden>Pause</button><button type="button" class="text-button" id="resume-button" hidden>Resume <span aria-hidden="true">↗</span></button><button type="button" class="text-button danger-text" id="stop-button" hidden>Stop</button></div></div>
+        <div id="events" class="events" role="log" aria-label="Task activity" aria-live="polite" aria-relevant="additions"></div>
+        <div class="working-indicator" id="working-indicator" hidden><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Working through the next step</span></div>
+
+        <section id="approval-card" class="interaction-card approval-card" aria-labelledby="approval-title" hidden>
+          <span class="section-eyebrow">YOU'RE IN CONTROL</span><h2 id="approval-title">A quick check before I act.</h2><p id="approval-reason"></p><div class="approval-action" id="approval-action"></div><details class="details"><summary>Review action details</summary><pre id="approval-details"></pre></details><div class="button-row"><button type="button" class="button button-primary" id="approve-button">Allow once</button><button type="button" class="button button-secondary" id="approve-site-button" hidden></button><button type="button" class="button button-secondary" id="deny-button">Deny action</button></div>
+        </section>
+
+        <section id="question-card" class="interaction-card" aria-labelledby="question-title" hidden>
+          <span class="section-eyebrow">A LITTLE CONTEXT</span><h2 id="question-title">Over to you.</h2><p id="agent-question"></p><form id="reply-form"><label class="sr-only" for="reply-input">Your answer</label><textarea id="reply-input" rows="3" placeholder="Add the details Orbit needs…" required></textarea><button type="submit" class="button button-primary">Send answer <span aria-hidden="true">↗</span></button></form>
+        </section>
+
+        <section class="answer-card" id="answer-card" aria-labelledby="answer-title" hidden><div class="card-heading"><span id="answer-title">THE RESULT</span><span aria-hidden="true">✓</span></div><div id="answer-content" class="prose"></div></section>
+        <div class="paused-note" id="paused-note" hidden><span aria-hidden="true">Ⅱ</span><p id="paused-message"></p></div>
+        <details class="notes-details" id="notes-details" hidden><summary>Working notes</summary><div id="notes-content" class="prose"></div></details>
+        <div class="run-footer"><div class="footer-actions"><button type="button" class="text-button" id="export-button">Export log <span aria-hidden="true">↓</span></button><button type="button" class="text-button" id="save-shortcut-button">Save as shortcut <span aria-hidden="true">＋</span></button></div><span>Keys &amp; raw action data excluded</span></div>
+      </section>
+    </main>
+
+    <footer class="composer-area">
+      <form id="task-form" class="composer">
+        <label class="sr-only" for="task-input">What would you like Orbit to do?</label>
+        <textarea id="task-input" rows="3" maxlength="20000" placeholder="What would you like to get done?" required></textarea>
+        <div class="composer-toolbar"><button type="button" class="model-button" id="model-button" title="Change model"><span class="model-dot" aria-hidden="true"></span><span id="model-label">Choose a model</span><span class="model-chevron" aria-hidden="true">⌄</span></button><button type="submit" class="send-button" id="start-button" aria-label="Start task" title="Start task (Ctrl+Enter)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button></div>
+      </form>
+      <p class="panel-note" id="panel-note"><span class="small-circle" aria-hidden="true"></span>Keep this panel open while Orbit works. Open it anytime with Alt+Shift+O.</p>
+    </footer>
+  </div>
+
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-header"><div><span class="section-eyebrow">MAKE IT YOURS</span><h2 id="settings-title">Your model. Your Orbit.</h2></div><button type="button" class="icon-button" id="close-settings" aria-label="Close settings">×</button></div>
+    <form id="settings-form">
+      <div class="settings-body">
+        <section class="settings-section"><h3>Model connection</h3><p class="section-description">Use a cloud API key or a model running locally.</p>
+          <div class="field"><label for="preset">Provider preset</label><select id="preset" name="preset"></select></div>
+          <div class="field"><label for="provider">API format</label><select id="provider" name="provider"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Google Gemini</option><option value="compatible">OpenAI compatible / local</option></select></div>
+          <div class="field"><label for="base-url">API base URL</label><input id="base-url" name="baseUrl" type="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:11434/v1" required><small>Enter the API root, including /v1 if needed.</small></div>
+          <div class="field"><label for="model">Model ID</label><input id="model" name="model" type="text" autocomplete="off" spellcheck="false" placeholder="Enter the model's exact ID" required><small>Use the exact model ID available from your provider.</small></div>
+          <div class="field"><label for="api-key">API key <span class="label-hint">optional for local models</span></label><div class="input-with-button"><input id="api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Your key stays in this browser"><button type="button" id="toggle-key" aria-label="Show API key" aria-pressed="false">Show</button></div></div>
+          <label class="check-row"><input type="checkbox" id="remember-key"><span><strong>Remember API key on this device</strong><small>Stored unencrypted in extension storage. Otherwise, the key lasts for this browser session.</small></span></label>
+          <div class="connection-test"><button type="button" class="button button-secondary" id="test-connection">Test connection <span aria-hidden="true">↗</span></button><p id="test-result" role="status"></p></div>
+        </section>
+
+        <section class="settings-section"><h3>How Orbit works</h3>
+          <div class="field"><label for="tool-mode">Tool calling</label><select id="tool-mode"><option value="native">Native tools — recommended</option><option value="json">JSON instructions — text model fallback</option></select><small>Use JSON mode if your model does not support native tool calls.</small></div>
+          <label class="check-row"><input type="checkbox" id="compact"><span><strong>Optimize for smaller models</strong><small>Shorter instructions, fewer tools, and simpler page descriptions. Turn on for local or small models (roughly under 30B parameters).</small></span></label>
+          <div class="field"><label for="context-tokens">Model context window <span class="label-hint">tokens</span></label><input id="context-tokens" type="number" min="2048" max="2000000" step="1" required><small>Orbit trims history and page descriptions to fit. For Ollama this must match the server's context length (set OLLAMA_CONTEXT_LENGTH, e.g. 8192); otherwise the start of the conversation, including Orbit's instructions, is silently cut off.</small></div>
+          <label class="check-row"><input type="checkbox" id="auto-observe"><span><strong>Re-read the page after each action</strong><small>Shows the model the result of every click or navigation right away. Recommended, especially for smaller models.</small></span></label>
+          <label class="check-row"><input type="checkbox" id="vision"><span><strong>Let the model see screenshots</strong><small>Enable only for models that accept images. Page text and controls work without vision.</small></span></label>
+          <div class="field"><label for="permission-mode">Browser actions</label><select id="permission-mode"><option value="ask">Ask before making changes</option><option value="auto">Act automatically</option></select><small id="permission-description">Orbit asks before browser actions that can change a page or send information.</small></div>
+          <div class="field-grid"><div class="field"><label for="max-turns">Step limit</label><input id="max-turns" type="number" min="1" max="200" step="1" required></div><div class="field"><label for="max-tokens">Response tokens</label><input id="max-tokens" type="number" min="256" max="32768" step="1" required></div></div>
+          <p class="settings-note">Model quality and website restrictions affect what Orbit can do. Local servers must allow requests from this extension.</p>
+        </section>
+
+        <section class="settings-section privacy-section"><h3>Your data</h3><p>Page content and enabled screenshots are sent to your chosen model endpoint. Task history is stored in this browser. Starting a new task clears the saved run.</p><p>Exported logs omit connection keys, screenshots, and raw tool details, but can include page content from the conversation.</p></section>
+      </div>
+      <div class="dialog-footer"><p id="settings-feedback" role="status"></p><button type="button" class="button button-secondary" id="cancel-settings">Cancel</button><button type="submit" class="button button-primary">Save settings</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

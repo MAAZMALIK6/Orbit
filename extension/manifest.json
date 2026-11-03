@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Orbit — Model-agnostic browser agent",
+  "short_name": "Orbit",
+  "version": "0.3.0",
+  "description": "Bring your own model. Read, navigate and act across browser tabs with a visible, resumable task loop.",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "debugger"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "panel/panel.html"
+  },
+  "action": {
+    "default_title": "Open Orbit"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; connect-src https: http://localhost:* http://127.0.0.1:* http://[::1]:*;"
+  },
+  "commands": {
+    "open-panel": {
+      "suggested_key": {
+        "default": "Alt+Shift+O",
+        "mac": "Alt+Shift+O"
+      },
+      "description": "Open the Orbit side panel"
+    }
+  }
+}
