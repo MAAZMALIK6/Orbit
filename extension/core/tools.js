@@ -142,6 +142,17 @@ export function validateToolCall(call) {
   return tool;
 }
 
+const PLACEHOLDERS = [
+  /^\s*(\[[^\]]*\]|<[^>]*>|\{\{[^}]*\}\})\s*$/,
+  /^\W*(your|enter|insert)[ _-]*(full[ _-]*)?(name|e-?mail|phone([ _-]*number)?|number|address)\W*$/i,
+  /\b(john|jane)[ _-]doe\b/i,
+  /\b(123[-. ]?456[-. ]?7890|555[-. ]?555[-. ]?5555|x{3}[-. ]?x{3}[-. ]?x{4})\b/i,
+];
+
+export function looksLikePlaceholder(text) {
+  return typeof text === 'string' && PLACEHOLDERS.some(pattern => pattern.test(text));
+}
+
 export function approvalReason(call) {
   return `${call.name.replaceAll('_', ' ')} can change a page or browser state. Review the exact arguments before allowing it.`;
 }

@@ -10,7 +10,7 @@ Orbit is a Chrome MV3 side-panel extension that lets any LLM operate the browser
 
 | Command | What it does | Cost |
 | --- | --- | --- |
-| `npm test` | Node built-in test runner over `tests/*.test.js` (80 tests) | free, ~1s |
+| `npm test` | Node built-in test runner over `tests/*.test.js` (85 tests) | free, ~1s |
 | `npm run check` | MV3 manifest, imports, syntax, no inline scripts | free |
 | `node tests/browser-smoke.mjs` | Loads the real extension in headless Chromium and drives the worker RPC plus panel UI | free, ~20s, needs Chromium |
 | `node tests/live-eval.mjs [--models a,b] [--tasks x,y] [--json] [--compact]` | Real agent with a real model on 6 practice tasks; writes `tests/artifacts/live-eval.json` | **spends API tokens**; needs `NVIDIA_API_KEY` or `ORBIT_EVAL_BASE_URL` + `ORBIT_EVAL_API_KEY` |
@@ -56,7 +56,7 @@ VALIDATION.md          what has been verified and what has not
 2. **Interrupted mutations are never replayed.** `inFlight` is written before dispatch. On resume the result is marked UNKNOWN.
 3. **Approvals happen outside the model.** Ask mode pauses page-changing actions (`ACTION_TOOLS`). Site-scoped approval dispatches with `siteGuard`, and the driver re-checks the hostname right before executing.
 4. **No claimed success without evidence.** `finish` is refused once while `needsCheck` is set. A text-only reply is nudged and never auto-completes after an unchecked change.
-5. **Stop and ask instead of looping.** These set status `waiting` with `questionCall {id:null,name:'help'}`: 3 unusable model replies, 3 failed steps, or the same step 3 times with an unchanged result.
+5. **Stop and ask instead of looping.** These set status `waiting` with `questionCall {id:null,name:'help'}`: 3 unusable model replies, 3 failed steps, or the same step (or a cycle of up to 4 steps) 3 times with unchanged results.
 6. Passwords are never typed (the driver refuses) and their values are redacted in reads. API keys are redacted from errors and excluded from exports.
 
 ## Model notes

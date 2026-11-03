@@ -1,10 +1,10 @@
 // Scripted versions of the mistakes small models make, and how Orbit recovers or stops for the user.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Agent } from '../extension/core/agent.js';
+import { Agent, repeatedCycle } from '../extension/core/agent.js';
 import { DEFAULT_SETTINGS } from '../extension/core/storage.js';
 import { complete, outputError, extractJsonObjects } from '../extension/core/providers.js';
-import { coerceArgs, toolsFor, TOOLS } from '../extension/core/tools.js';
+import { coerceArgs, toolsFor, TOOLS, looksLikePlaceholder } from '../extension/core/tools.js';
 import { formatSnapshot, formatToolResult, pruneObservations } from '../extension/core/observe.js';
 
 const config = { ...DEFAULT_SETTINGS, model: 'small-model', permissionMode: 'auto', maxTurns: 12, compact: true, contextTokens: 8192 };
@@ -122,6 +122,50 @@ test('repeating the same step without the page changing stops for help', async (
   await h.agent.start('Find the footer', config); await settle(h.agent);
   assert.equal(h.agent.state.status, 'waiting');
   assert.match(h.agent.state.question, /same step three times/);
+});
+
+test('a multi-step loop with unchanged results is warned once, then stops for help', async () => {
+  const cycle = () => [turn(call('read_page', {})), turn(call('find', { query: 'Starter' })), turn(call('find', { query: 'Studio' }))];
+  const h = harness([...cycle(), ...cycle(), ...cycle(), turn(call('read_page', {}))], { rpc: message => (message.name === 'find' ? { tabId: 7, query: message.args.query, matches: [] } : undefined) });
+  await h.agent.start('Compare the plans', config); await settle(h.agent);
+  assert.equal(h.agent.state.status, 'waiting');
+  assert.match(h.agent.state.question, /same 3 steps three times/);
+  assert.equal(h.actions.length, 9);
+  assert.ok(!h.requests[5].messages.some(message => /repeated these same steps/.test(message.content)));
+  assert.match(h.requests[6].messages.at(-1).content, /repeated these same steps/);
+  assertPairedResults(h.agent.state.messages);
+});
+
+test('step cycles are found only when the same steps and results repeat back to back', () => {
+  assert.equal(repeatedCycle(['a', 'a', 'a']), 1);
+  assert.equal(repeatedCycle(['x', 'a', 'b', 'a', 'b', 'a', 'b']), 2);
+  assert.equal(repeatedCycle(['a', 'b', 'c', 'd', 'a', 'b', 'c', 'd'], 2), 4);
+  assert.equal(repeatedCycle(['a', 'b', 'a', 'b', 'a', 'c']), 0);
+  assert.equal(repeatedCycle(['a', 'b', 'a', 'b']), 0);
+});
+
+test('placeholder text is refused before typing so the model asks for the real value', async () => {
+  const h = harness([
+    turn(call('type_text', { elementId: 'ab12c-1', text: '[Your Name]' })),
+    turn(call('ask_user', { question: 'What name should I use?' })),
+  ]);
+  await h.agent.start("Send a message saying I'd like a demo", config); await settle(h.agent);
+  assert.ok(!h.actions.some(action => action.name === 'type_text'));
+  assert.match(h.requests[1].messages.at(-1).content, /placeholder text.*ask_user.*No action was taken/);
+  assert.equal(h.agent.state.status, 'waiting');
+  assert.equal(h.agent.state.question, 'What name should I use?');
+});
+
+test('placeholder-looking text the user asked for is typed', async () => {
+  const h = harness([turn(call('type_text', { elementId: 'ab12c-1', text: '[Your Name]' })), turn(call('read_page', {})), turn(call('finish', { answer: 'Typed.' }))]);
+  await h.agent.start('Type [Your Name] into the template field', config); await settle(h.agent);
+  assert.ok(h.actions.some(action => action.name === 'type_text'));
+  assert.equal(h.agent.state.status, 'completed');
+});
+
+test('placeholder detection catches template values but not ordinary text', () => {
+  for (const text of ['[Your Name]', '<email>', '{{phone}}', 'Your phone number', 'Enter name', 'John Doe', 'Call 123-456-7890']) assert.ok(looksLikePlaceholder(text), text);
+  for (const text of ['Alex Kim', 'Thanks for your email!', '[urgent] Fix login', 'Launch research', "I'd like a product demo."]) assert.ok(!looksLikePlaceholder(text), text);
 });
 
 test('sloppy arguments are repaired without inventing values', () => {
