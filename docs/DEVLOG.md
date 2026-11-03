@@ -6,7 +6,7 @@ Newest session first. Each entry records the goal, what changed, why, how it was
 
 - Working MV3 extension. 85 unit tests pass, the real-browser smoke test passes 9/9, and `npm run check` is clean.
 - Live eval: Mistral Large 4 passed 6/6 (session 4). Nemotron 3.5 Bolt passed 6/6 after the session 5 fixes (it was 4/6 before them).
-- Git repository; v0.3.0 is commit `81be24f` on `main`. Sessions 4 and 5 are not committed yet.
+- Git repository; v0.3.0 is commit `81be24f` on `main`. Sessions 4 and 5 are commit `cd2e599` on branch `small-model-loop-placeholder`.
 
 ### Open work, in suggested order
 
