@@ -10,7 +10,7 @@ Orbit is a Chrome MV3 side-panel extension that lets any LLM operate the browser
 
 | Command | What it does | Cost |
 | --- | --- | --- |
-| `npm test` | Node built-in test runner over `tests/*.test.js` (85 tests) | free, ~1s |
+| `npm test` | Node built-in test runner over `tests/*.test.js` (86 tests) | free, ~1s |
 | `npm run check` | MV3 manifest, imports, syntax, no inline scripts | free |
 | `node tests/browser-smoke.mjs` | Loads the real extension in headless Chromium and drives the worker RPC plus panel UI | free, ~20s, needs Chromium |
 | `node tests/live-eval.mjs [--models a,b] [--tasks x,y] [--json] [--compact]` | Real agent with a real model on 6 practice tasks; writes `tests/artifacts/live-eval.json` | **spends API tokens**; needs `NVIDIA_API_KEY` or `ORBIT_EVAL_BASE_URL` + `ORBIT_EVAL_API_KEY` |

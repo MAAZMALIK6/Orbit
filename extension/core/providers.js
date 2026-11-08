@@ -10,7 +10,7 @@ export const PROVIDER_PRESETS = Object.freeze([
   { id: 'custom', label: 'OpenAI-compatible endpoint', provider: 'compatible', baseUrl: '', model: '', vision: false, toolMode: 'native', compact: false, contextTokens: 32000 },
 ]);
 
-const REQUEST_TIMEOUT_MS = 120_000;
+const DEFAULT_TIMEOUT_SECONDS = 180;
 const MAX_RESPONSE_CHARS = 4_000_000;
 const MAX_REPLAY_CHARS = 1_000_000;
 const RETRY_STATUSES = new Set([408, 409, 429, 500, 502, 503, 504, 529]);
@@ -280,13 +280,14 @@ async function readJsonResponse(response) {
 }
 
 async function fetchJson(request, settings, signal) {
+  const seconds = Math.min(600, Math.max(30, Math.round(Number(settings.requestTimeout) || DEFAULT_TIMEOUT_SECONDS)));
   for (let attempt = 0; attempt < 3; attempt++) {
     if (signal?.aborted) throw abortError();
     const controller = new AbortController();
     let timedOut = false;
     const abort = () => controller.abort();
     signal?.addEventListener('abort', abort, { once: true });
-    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, REQUEST_TIMEOUT_MS);
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, seconds * 1000);
     let response;
     let networkFailure = false;
     try {
@@ -304,7 +305,7 @@ async function fetchJson(request, settings, signal) {
       if (!RETRY_STATUSES.has(response.status) || attempt === 2) throw responseError(response.status, data, settings.apiKey);
     } catch (error) {
       if (signal?.aborted) throw abortError();
-      if (timedOut) throw new Error('The model request timed out after 120 seconds. Try a faster model or a smaller task.');
+      if (timedOut) throw new Error(`The model did not answer within ${seconds} seconds. The provider may be busy: resume to try again, raise the request timeout in settings, or choose a faster model.`);
       if (error instanceof TypeError) networkFailure = true;
       else throw error;
       if (attempt === 2) {

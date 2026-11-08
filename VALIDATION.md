@@ -6,7 +6,7 @@ What has been checked in Orbit 0.3.0, how, and what those checks do not cover. L
 
 | Command | Result | Covers |
 | --- | --- | --- |
-| `npm test` | 85/85 pass | Agent loop, approvals (including site-scoped), recovery, compaction, token usage, small-model recovery and help stops; provider wire formats, retries, cancellation, and failure modes for OpenAI, Anthropic, Gemini, and OpenAI-compatible endpoints; driver commands against a fake `chrome` API; DOM operations in a `vm` sandbox; shortcut validation |
+| `npm test` | 86/86 pass | Agent loop, approvals (including site-scoped), recovery, compaction, token usage, small-model recovery and help stops; provider wire formats, retries, cancellation, and failure modes for OpenAI, Anthropic, Gemini, and OpenAI-compatible endpoints; driver commands against a fake `chrome` API; DOM operations in a `vm` sandbox; shortcut validation |
 | `npm run check` | pass | MV3 manifest, referenced files exist, module imports resolve, no inline scripts, syntax of every extension file |
 | `node tests/browser-smoke.mjs` | 9/9 pass on Chromium 145 (Playwright build) | The real extension loaded in headless Chromium with a temporary profile. See below |
 | `npm run package` | pass | Writes `artifacts/orbit-extension.zip` |

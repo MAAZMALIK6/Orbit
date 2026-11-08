@@ -301,6 +301,7 @@ function fillSettings(value) {
   $('permission-mode').value = value.permissionMode || 'ask';
   $('max-turns').value = value.maxTurns || 40;
   $('max-tokens').value = value.maxTokens || 4096;
+  $('request-timeout').value = value.requestTimeout || DEFAULT_SETTINGS.requestTimeout;
   $('settings-feedback').textContent = '';
   $('test-result').textContent = '';
   updatePermissionDescription();
@@ -314,6 +315,7 @@ function readSettingsForm() {
     rememberKey: $('remember-key').checked, permissionMode: $('permission-mode').value,
     maxTurns: Number($('max-turns').value), maxTokens: Number($('max-tokens').value),
     compact: $('compact').checked, autoObserve: $('auto-observe').checked, contextTokens: Number($('context-tokens').value),
+    requestTimeout: Number($('request-timeout').value),
   };
   if (!value.model) throw new Error('Enter the exact model ID from your provider.');
   const url = new URL(value.baseUrl);

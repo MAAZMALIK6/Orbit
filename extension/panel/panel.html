@@ -99,6 +99,7 @@
           <label class="check-row"><input type="checkbox" id="vision"><span><strong>Let the model see screenshots</strong><small>Enable only for models that accept images. Page text and controls work without vision.</small></span></label>
           <div class="field"><label for="permission-mode">Browser actions</label><select id="permission-mode"><option value="ask">Ask before making changes</option><option value="auto">Act automatically</option></select><small id="permission-description">Orbit asks before browser actions that can change a page or send information.</small></div>
           <div class="field-grid"><div class="field"><label for="max-turns">Step limit</label><input id="max-turns" type="number" min="1" max="200" step="1" required></div><div class="field"><label for="max-tokens">Response tokens</label><input id="max-tokens" type="number" min="256" max="32768" step="1" required></div></div>
+          <div class="field"><label for="request-timeout">Request timeout <span class="label-hint">seconds</span></label><input id="request-timeout" type="number" min="30" max="600" step="1" required><small>How long to wait for each model reply. Raise it for slow or busy providers and slow local hardware.</small></div>
           <p class="settings-note">Model quality and website restrictions affect what Orbit can do. Local servers must allow requests from this extension.</p>
         </section>
 

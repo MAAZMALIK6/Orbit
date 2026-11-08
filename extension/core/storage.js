@@ -2,7 +2,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   provider: 'compatible', baseUrl: 'http://localhost:11434/v1', model: '', apiKey: '',
   toolMode: 'native', vision: false, permissionMode: 'ask', maxTurns: 40,
   maxTokens: 4096, rememberKey: false,
-  compact: false, contextTokens: 32000, autoObserve: true,
+  compact: false, contextTokens: 32000, autoObserve: true, requestTimeout: 180,
 });
 
 export async function restrictStorage() {
@@ -41,6 +41,7 @@ export function validateSettings(settings) {
   result.vision = !!result.vision;
   result.compact = !!result.compact;
   result.autoObserve = result.autoObserve !== false;
+  result.requestTimeout = Math.min(600, Math.max(30, Math.round(Number(result.requestTimeout) || 180)));
   result.contextTokens = Math.min(2000000, Math.max(2048, Math.round(Number(result.contextTokens) || 32000)));
   return result;
 }

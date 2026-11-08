@@ -4,21 +4,37 @@ Newest session first. Each entry records the goal, what changed, why, how it was
 
 ## Current status (2026-11-03, v0.3.0)
 
-- Working MV3 extension. 85 unit tests pass, the real-browser smoke test passes 9/9, and `npm run check` is clean.
+- Working MV3 extension. 86 unit tests pass, the real-browser smoke test passes 9/9, and `npm run check` is clean.
 - Live eval: Mistral Large 4 passed 6/6 (session 4). Nemotron 3.5 Bolt passed 6/6 after the session 5 fixes (it was 4/6 before them).
-- Git repository; v0.3.0 is commit `81be24f` on `main`. Sessions 4 and 5 are commit `cd2e599` on branch `small-model-loop-placeholder`.
+- Git repository; v0.3.0 is commit `81be24f` on `main`. Sessions 4 and 5 are commit `cd2e599` on branch `small-model-loop-placeholder`. Session 6 is the next commit on the same branch.
 
 ### Open work, in suggested order
 
 1. **Login question wording:** in session 4, Bolt's sign-in stop asked the user to "provide your email and password". In session 5 it correctly asked the user to sign in, so the wording varies between runs. Tighten the prompt and the sign-in HINT in `observe.js` so the model always tells the user to sign in themselves.
 2. **Small models read long pages by scrolling:** on `long` in session 5, Bolt scrolled 200px and re-read the page four times before using `get_page_text` (12 turns, against 3 in session 4). It still passed. Consider a HINT in `formatSnapshot` when the page has much more text than is shown.
-3. **Long requests:** MiniMax M3.1 Flash on NVIDIA never answered within 120s (even a bare "Say ready." with no tools). Find out whether that is account access, queueing, or a model that needs streaming. Consider streaming responses (`stream: true`) in `providers.js` so slow reasoning models show progress and don't hit the fixed 120s timeout.
-4. **Make the 120s request timeout configurable** in settings (slow reasoning models, slow local hardware).
+3. **Streaming responses:** on NVIDIA's free tier, Mistral Large 4 took 21–83s even for tiny requests, and MiniMax M3.1 Flash never answered. With `stream: true` in `providers.js`, the timeout could measure time without new output rather than total time, and the panel could show progress.
+4. **First real-site run (PakWheels) never got past opening the page;** see session 6. Re-run it once the timeout is raised.
 5. **Approval card "Allow on site" button:** covered by logic tests, not yet checked visually.
 6. **Workflow recording:** shortcuts save prompts only, not click sequences.
 7. **Multi-run history:** only the latest run is kept.
 8. **Token-accurate budgeting:** context budgeting uses ~3.2 chars/token, not a tokenizer.
 9. **Ollama end-to-end eval:** the harness supports `ORBIT_EVAL_BASE_URL=http://localhost:11434/v1`, but it has not been run because the Ollama server wasn't running.
+
+---
+
+## Session 6 — 2026-11-03 — Claude Code — configurable request timeout after the first real-site run
+
+**Trigger:** the user's first run in their own Chrome (Mistral Large 4 on NVIDIA, Ask mode) was "open pakwheels.com and look for the cheapest toyota aqua that i can buy". It ended in `error` after one action. The first model reply took 83s for about 3k input tokens. After `open_tab`, the next request (now including the PakWheels page) hit the fixed 120s timeout. A bare "Say ready." to the same model took 21.5s, so the NVIDIA free endpoint was slow; Orbit was not at fault.
+
+### Changes
+- **`core/storage.js`:** new setting `requestTimeout` in seconds, default 180 (was a fixed 120), clamped to 30–600.
+- **`core/providers.js`:** `fetchJson` uses `settings.requestTimeout`. The timeout error now says what to do next: "The model did not answer within N seconds. The provider may be busy: resume to try again, raise the request timeout in settings, or choose a faster model." Runs in `error` were already resumable.
+- **Panel:** "Request timeout (seconds)" field under the step limit.
+- **`scripts/orbit-browser.mjs` (new, not yet run):** opens a separate Chromium window with Orbit loaded, using a persistent profile at `%LOCALAPPDATA%\Orbit\browser-profile`. On the first run, or with `--configure`, it saves NVIDIA settings and the key from `NVIDIA_API_KEY` through the panel's own `saveSettings`, in a headless pass with remote debugging. The visible window then starts without remote debugging.
+- **Tests:** the provider timeout test now uses 180s; new test for a custom timeout and the 30/600 clamp. CONTRACT settings updated.
+
+### Verification
+- `npm test`: 86/86. `npm run check`: clean. `node tests/browser-smoke.mjs`: 9/9.
 
 ---
 

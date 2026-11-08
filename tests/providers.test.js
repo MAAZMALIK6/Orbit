@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { complete, testConnection, PROVIDER_PRESETS } from '../extension/core/providers.js';
+import { validateSettings } from '../extension/core/storage.js';
 
 const tools = [
   { name: 'read_page', description: 'Read a page', parameters: { type: 'object', properties: { tabId: { type: 'integer' } } } },
@@ -305,10 +306,23 @@ test('model requests time out and release the pending fetch', async (t) => {
     init.signal.addEventListener('abort', () => { aborted = true; reject(new DOMException('Aborted', 'AbortError')); });
   }));
   const request = run();
-  const rejected = assert.rejects(request, /timed out after 120 seconds/);
-  t.mock.timers.tick(120_000);
+  const rejected = assert.rejects(request, /did not answer within 180 seconds.*resume/);
+  t.mock.timers.tick(180_000);
   await rejected;
   assert.equal(aborted, true);
+});
+
+test('the request timeout follows settings, within 30 to 600 seconds', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(globalThis, 'fetch', async (_url, init) => new Promise((_resolve, reject) => {
+    init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+  }));
+  const request = run({ settings: { ...settings, requestTimeout: 45 } });
+  const rejected = assert.rejects(request, /within 45 seconds/);
+  t.mock.timers.tick(45_000);
+  await rejected;
+  assert.equal(validateSettings({ model: 'm', requestTimeout: 5 }).requestTimeout, 30);
+  assert.equal(validateSettings({ model: 'm', requestTimeout: 9999 }).requestTimeout, 600);
 });
 
 test('invalid settings fail before networking', async (t) => {
